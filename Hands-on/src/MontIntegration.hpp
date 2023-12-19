@@ -38,12 +38,14 @@ public:
         double sum = 0.0;
         double sum_2= 0.0;
 
+        //@note: never hard code the number of threads
         #pragma omp parallel for num_threads(12) default(none) \
             shared(shape, N, r, p, points) \
             reduction(+ : sum, sum_2) private(point, sample)
         for (int i = 0; i < points; ++i) {
             sample = shape->generateVector();
 
+            //@note: muparserx supports natively arrays
             for (int j = 0; j < shape->getDimensions(); ++j) {
                 std::string num_0 = "x";
                 std::string num = std::to_string(j);
@@ -54,6 +56,7 @@ public:
             auto fi = p.Eval();
 
             sum += fi;
+            //@note: nice, clever way to keep track of variance
             sum_2 += fi * fi;
         }
 

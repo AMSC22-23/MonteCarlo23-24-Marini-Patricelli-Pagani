@@ -1,7 +1,7 @@
 #ifndef HYPERRECTANGLE_HPP
 #define HYPERRECTANGLE_HPP
 
-include <mpi.h>
+#include <mpi.h>
 
 #include <cstdlib>
 #include <fstream>
