@@ -45,6 +45,7 @@ public:
         for (int i = 0; i < points; ++i) {
             sample = shape->generateVector();
 
+            //@note: muparserx supports natively arrays
             for (int j = 0; j < shape->getDimensions(); ++j) {
                 std::string num_0 = "x";
                 std::string num = std::to_string(j);
@@ -55,6 +56,7 @@ public:
             auto fi = p.Eval();
 
             sum += fi;
+            //@note: nice, clever way to keep track of variance
             sum_2 += fi * fi;
         }
 

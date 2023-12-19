@@ -12,7 +12,8 @@
 int main(int argc, char** argv) {
     // Check the number of command line arguments
     if (argc != 4) {
-        std::cerr << "Usage: " << argv[0] << " <typeShape> <N> <paramsShape>" << std::endl;
+        //@note: nice error, be more precise on the meaning
+        std::cerr << "Usage: " << argv[0] << " <typeShape> <Nsamples> <paramsShapeFilename>" << std::endl;
         return -1;
     }
 
@@ -31,6 +32,7 @@ int main(int argc, char** argv) {
     MontIntegration montIntegration{};
     std::shared_ptr<Shape> shape;
 
+    //@note: nice use of polymorphism
     switch (typeShape) {
         case 0: {
             shape = std::make_shared<HyperRectangle>(paramsShape);
