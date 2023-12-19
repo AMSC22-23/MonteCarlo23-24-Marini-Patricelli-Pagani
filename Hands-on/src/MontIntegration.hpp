@@ -38,6 +38,7 @@ public:
         double sum = 0.0;
         double sum_2= 0.0;
 
+        //@note: never hard code the number of threads
         #pragma omp parallel for num_threads(12) default(none) \
             shared(shape, N, r, p, points) \
             reduction(+ : sum, sum_2) private(point, sample)
