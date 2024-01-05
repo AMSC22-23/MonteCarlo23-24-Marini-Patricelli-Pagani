@@ -15,10 +15,11 @@ public:
     void printLattice() const override;
     float evaluateEnergy() const override;
     void initialize() override;
+    const std::array<int, N>& getLattice() const;
 
 private:
-    const float J;
     const int L;
+    const int J;
     std::array<int, N> lattice;
 };
 

@@ -2,6 +2,13 @@
 #define SQUARELATTICE_TPP
 
 template <int N>
+SquareLattice<N>::SquareLattice(float interactionStrength, int latticeSize) 
+    : AbstractLattice<N>(), L(latticeSize), lattice()
+{
+    initialize();
+}
+
+template <int N>
 void SquareLattice<N>::printLattice() const {
     for (int i = 0; i < N; i++) {
         if (i % L == 0)
@@ -57,5 +64,12 @@ void SquareLattice<N>::initialize() {
 
     evaluateEnergy();
 }
+
+
+template <int N>
+const std::array<int, N>& SquareLattice<N>::getLattice() const {
+    return lattice;
+}
+
 
 #endif // SQUARELATTICE_TPP
