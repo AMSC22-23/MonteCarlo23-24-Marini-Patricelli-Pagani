@@ -10,11 +10,11 @@
 
 
 
-#define L 200
+#define L 100
 #define N (L*L)
 #define A 50//Block side lenght
 #define J 1.00
-#define IT 6*1e8//number of iterations
+constexpr long int IT = 6*1e7;//number of iterations
 #define CHUNKSIZE 1e6
 
 
@@ -245,30 +245,29 @@ float simulate(float T,std::vector <int> & lattice, std::vector<int> num_vect, c
     t_axis[0] = 0;
     //const int chunckSize = floor(IT/(NUMBLOCKS));
 #pragma omp parallel for num_threads(NUMBLOCKS) schedule(dynamic, (int)CHUNKSIZE)
-    {
-        for (unsigned long int i = 0; i < IT ; i++) {
+for (unsigned long int i = 0; i < IT ; i++) {
 
 
-                    //first term is first site in our block
-                    // shift = column*NUMTHREAD + row*NUMBLOCKLINE*NUMTHREAD due to current htread work
-                        //int r = num_vect[i], c = block_vect[i];
-                        //int flipingSite = tStart[omp_get_thread_num()] + r * L  + c;
-                        //if (boundary[i]) {
-                        int n = num_vect[i];
-                        if(n%A==0 || (n+1)%A==0 || n%(A*L)==0 || (n+L)%(A*L)==0){
-                            atomicflip(lattice, prob, n);
-                        } else {
-                            flip(lattice, prob, n); //true è nero
-                        }
-                    }
+            //first term is first site in our block
+            // shift = column*NUMTHREAD + row*NUMBLOCKLINE*NUMTHREAD due to current htread work
+                //int r = num_vect[i], c = block_vect[i];
+                //int flipingSite = tStart[omp_get_thread_num()] + r * L  + c;
+                //if (boundary[i]) {
+                int n = num_vect[i];
+                if(n%A==0 || (n+1)%A==0 || n%(A*L)==0 || (n+L)%(A*L)==0){
+                    atomicflip(lattice, prob, n);
+                } else {
+                    flip(lattice, prob, n); //true è nero
                 }
-                //cout<<"COLOR: "<<color<<" ITERATION: "<<iteration;
+            }
+        
+        //cout<<"COLOR: "<<color<<" ITERATION: "<<iteration;
 
 
 
 
-    //float m = (float)M/N;
-    return M;
+//float m = (float)M/N;
+return M;
 }
 
 
@@ -351,4 +350,3 @@ int main() {
     return 0;
 
 }
-
