@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <vector>
 #include <array>
+#include <cstring>
 #include <iostream>
 #include<fstream>
 #include<ctime>
@@ -13,7 +14,7 @@
 
 constexpr int L = 100  ;
 constexpr int N = (L*L);
-constexpr int THREADPERSIDE = 4; //is nothing but blocks per side, 
+constexpr int THREADPERSIDE = 1; //is nothing but blocks per side, 
 constexpr int NUMTHREAD = THREADPERSIDE*THREADPERSIDE; //is nothing but number of block,s
 constexpr int J = 1.00;
 
@@ -223,7 +224,34 @@ const int setBlockSize(std::array<int,NUMTHREAD>& tStart) {
 }
 
 //Evaluate exact equilibrium value of per site magnetization from Onsager's formula for 2D case
-auto Mexact =[](int T){return N*std::pow((1.0 - std::pow(std::sinh(2 * J / T), -4)), 1.0 / 8.0);} ;
+float Mexact(float T){
+    return std::pow((1.0 - std::pow(std::sinh(2 * J / T), -4)), 1.0 / 8.0);
+    }
+     
+
+void translateMatrix( std::array<int,N>& inputMatrix) {
+//#pragma omp parallel for num_threads(16) schedule(static, (int)CHUNKSIZE)
+        int* localCopy = new int[N];
+        std::memcpy(localCopy, inputMatrix.data(), N * sizeof(int));
+        for (int i = 0; i < N; ++i) {
+            // Check if the new indices are within bounds
+            if ((i + L) < N) { //we are not moving last row
+                if ((i + 1) % L != 0) //We are not in last column
+                    inputMatrix[i + L + 1] = localCopy[i];
+                else { //if we are in last column but not last row put element at the beginning of new row
+                    inputMatrix[i + 1] = localCopy[i];
+                }
+            } else if ((i + 1) % L != 0) //We are not in last column of last row
+            {
+                // If out of bounds, put the element at the beginning
+                inputMatrix[i + L + 1 - N] = localCopy[i]; //+1 to translate col -N to move to first row
+            } else {//edge
+                inputMatrix[0] = localCopy[i];
+            }
+        }
+        delete[] localCopy;
+
+    }
 
 
 int main() {
@@ -235,35 +263,39 @@ int main() {
 
     float energy = 0;
     int M = 0;
-    double mExact = 1;
+    float m = 0;
+    float mExact = 1;
     initialize_lattice(lattice, energy, M);
     print_lattice(lattice);
     float T = 0.1;
   
     int M_loc = 0;
     int E_loc = 0;
+    float error = 0;
 
-    const double tollerance = std::pow(10,-5);
+    const double tollerance = 0.001; // tollerance of a 0.1% not aligned spin
     int step = 0;
     auto start = std::chrono::high_resolution_clock::now();  // Start timing before simulation
     int offset = 0;
     std::array<float,2> prob;
     std::array<int,N/NUMTHREAD> random;
-    
     #pragma omp parallel num_threads(NUMTHREAD) shared(M) 
     {
         #pragma omp single nowait
         {
-            while (T <= 0.2) {
+            
+            while (T < 0.2) {
                 
                 prob[0] = exp(-4 * J / T);
                 prob[1] = exp(-8 * J / T);
                 step = 0;
                 mExact = Mexact(T);
-                std::cout<<mExact<<std::endl;
+                m = static_cast<float>(M) / N;
+                error = abs(abs(m)-mExact);
                 
-                  while(M-mExact>tollerance){
-
+                 while(error>tollerance ){
+                    m = static_cast<float>(M) / N;
+                    error = abs(abs(m)-mExact);
                     create_rand_vect(random,tStart,A);
 
                     for(int taskNum = 0; taskNum < NUMTHREAD; taskNum++ ){
@@ -277,6 +309,7 @@ int main() {
                     }
                     #pragma omp taskwait
                     step++;
+                    translateMatrix(lattice);
                   }  
                   T+=0.1;
                 }
@@ -284,8 +317,9 @@ int main() {
     }
     auto end = std::chrono::high_resolution_clock::now();  // End timing after simulation
     std::chrono::duration<double> elapsed = end - start;  // Calculate elapsed time
-    std::cout << elapsed.count() << std::endl;
     print_lattice(lattice);
+    std::cout << elapsed.count() << std::endl;
+    std::cout<<step*N;
 
 
 
