@@ -1,5 +1,0 @@
-use constexpr for gloabal variable that can be computed at compiler time
-
-use std::array<type,N> for vector with known size
-
-Use classes, methods and generators instead of typdef and genrate lattices for example
