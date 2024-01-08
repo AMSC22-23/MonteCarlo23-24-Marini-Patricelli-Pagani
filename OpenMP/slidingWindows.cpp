@@ -14,7 +14,7 @@
 
 constexpr int L = 100  ;
 constexpr int N = (L*L);
-constexpr int THREADPERSIDE = 7; //is nothing but blocks per side, 
+constexpr int THREADPERSIDE = 5; //is nothing but blocks per side, 
 constexpr int NUMTHREAD = THREADPERSIDE*THREADPERSIDE; //is nothing but number of block,s
 constexpr int J = 1.00;
 
