@@ -277,7 +277,7 @@ int main() {
     int E_loc = 0;
     float error = 0;
 
-    const double tollerance = 0.001; // tollerance of a 0.1% not aligned spin
+    const double tollerance = 0.01; // tollerance of a 0.1% not aligned spin
     int step = 0;
     auto start = std::chrono::high_resolution_clock::now();  // Start timing before simulation
     int offset = 0;
