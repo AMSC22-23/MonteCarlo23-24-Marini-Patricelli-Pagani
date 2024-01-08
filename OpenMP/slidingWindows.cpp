@@ -14,7 +14,7 @@
 
 constexpr int L = 100  ;
 constexpr int N = (L*L);
-constexpr int THREADPERSIDE = 1; //is nothing but blocks per side, 
+constexpr int THREADPERSIDE = 7; //is nothing but blocks per side, 
 constexpr int NUMTHREAD = THREADPERSIDE*THREADPERSIDE; //is nothing but number of block,s
 constexpr int J = 1.00;
 
@@ -208,19 +208,19 @@ void create_rand_vect(std::array<int,N/NUMTHREAD> &rand_vect, std::array<int,NUM
 
 
 //return the number of block in a line = num  blocks in a col
-const int setBlockSize(std::array<int,NUMTHREAD>& tStart) {
+ int setBlockSize(std::array<int,NUMTHREAD>& tStart) {
     
     if (L % THREADPERSIDE == 0) {
-        const int A = L / THREADPERSIDE; // = larghezze di un blocco
+         int A = L / THREADPERSIDE; // = larghezze di un blocco
     for(int i=0;i<  NUMTHREAD;i++){
             tStart[i] = (floor(i/THREADPERSIDE)*A*L + i%THREADPERSIDE*A); //thread at which each block start
         }
         return A;
     }
     else {
-        std::cout << "It's not possible to fill a line of lenght: "<<L<<" with: "<<THREADPERSIDE<<" blocks"<<std::endl;
+          return -1;
     }
-    return 0;
+   
 }
 
 //Evaluate exact equilibrium value of per site magnetization from Onsager's formula for 2D case
@@ -259,8 +259,12 @@ int main() {
     srand(seed);
     std::array<int,N> lattice;
     std::array<int,NUMTHREAD> tStart; //starting point of each block
-    const int A = setBlockSize(tStart);
-
+   int A_try = setBlockSize(tStart);
+   if (A_try == -1) {
+	std::cerr << "Error: Unable to fill the line with the given number of blocks." << std::endl;
+        return 1;
+	}
+    const int A = A_try;		
     float energy = 0;
     int M = 0;
     float m = 0;
@@ -284,7 +288,7 @@ int main() {
         #pragma omp single nowait
         {
             
-            while (T < 0.2) {
+            while (T < 1.8) {
                 
                 prob[0] = exp(-4 * J / T);
                 prob[1] = exp(-8 * J / T);
@@ -293,7 +297,7 @@ int main() {
                 m = static_cast<float>(M) / N;
                 error = abs(abs(m)-mExact);
                 
-                 while(error>tollerance ){
+                 while(error>tollerance || step < 20){
                     m = static_cast<float>(M) / N;
                     error = abs(abs(m)-mExact);
                     create_rand_vect(random,tStart,A);
@@ -312,14 +316,13 @@ int main() {
                     translateMatrix(lattice);
                   }  
                   T+=0.1;
+                  std::cout<<m<<std::endl;
                 }
         }        
     }
     auto end = std::chrono::high_resolution_clock::now();  // End timing after simulation
     std::chrono::duration<double> elapsed = end - start;  // Calculate elapsed time
-    print_lattice(lattice);
     std::cout << elapsed.count() << std::endl;
-    std::cout<<step*N;
 
 
 
