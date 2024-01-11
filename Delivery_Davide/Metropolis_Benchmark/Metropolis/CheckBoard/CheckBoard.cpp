@@ -27,10 +27,10 @@ CheckBoard::CheckBoard(float interactionStrength, int latticeSize ,int NUMTHREAD
 {   
     // Initialize tStart with std::make_unique
     ThreadStart = std::make_unique<std::vector<int> >();
-    ThreadStart->reserve(NUMTHREAD);
+    ThreadStart->reserve(2*NUMTHREAD);
     // Initialize A with set_block_size function
     A = set_block_size();
-    NumFlipPerBlock = A*A;
+    NumFlipPerBlock = 0.01*IT;
     if (A == -1) {
     std::cerr << "Error: set_block_size failed\n";
     exit(EXIT_FAILURE);
@@ -70,20 +70,21 @@ void CheckBoard::simulate_phase_transition() {
         #pragma omp single nowait
         {
              while (T < T_MAX) {
+                std::cout << "T = " << T << std::endl;
                 prob[0] = std::exp(-4 * lattice.getInteractionEnergy() / T);
                 prob[1] = std::exp(-8 * lattice.getInteractionEnergy() / T);
                 E_loc = 0;
                 M_loc = 0; 
                 deltaE = 0;
                 deltaM = 0;
-               for(int slide = 0; slide < ceil(IT/(NUMTHREAD*NumFlipPerBlock)); slide++ ){
+               for(int slide = 0; slide < ceil(IT/(2*NUMTHREAD*NumFlipPerBlock)); slide++ ){
                     create_rand_vector();
                     E_loc = 0;
                     M_loc = 0; 
                     //even blocks
-                    for(int taskNum = 0; taskNum < NUMTHREAD; taskNum+=2){
+                    for(int taskNum = 0; taskNum < 2*NUMTHREAD; taskNum+=2){
                         #pragma omp task  firstprivate(M_loc, E_loc) shared(deltaM,deltaE)
-                        {
+                        {   
                             simulate_step(prob,lattice.get_lattice(), M_loc, E_loc, (*ThreadStart)[taskNum]);
                             #pragma omp atomic update
                             deltaM += M_loc;
@@ -93,9 +94,10 @@ void CheckBoard::simulate_phase_transition() {
                     }
                     #pragma omp taskwait
                     //odd blocks
+                    create_rand_vector();
                     E_loc = 0;
                     M_loc = 0;
-                    for(int taskNum = 1; taskNum < NUMTHREAD; taskNum+=2){
+                    for(int taskNum = 1; taskNum < 2*NUMTHREAD; taskNum+=2){
                         #pragma omp task  firstprivate(M_loc, E_loc) shared(deltaM,deltaE)
                         {
                             simulate_step(prob,lattice.get_lattice(), M_loc, E_loc, (*ThreadStart)[taskNum]);
@@ -134,16 +136,17 @@ void CheckBoard::create_rand_vector() {
         }
 }
 
+
 int CheckBoard::set_block_size() {
-    int THREADPERSIDE = sqrt(NUMTHREAD);
-    if(THREADPERSIDE*THREADPERSIDE != NUMTHREAD){
+    int THREADPERSIDE = sqrt(2*NUMTHREAD);
+    if(THREADPERSIDE*THREADPERSIDE != 2*NUMTHREAD){
         std::cerr << "Error: Number of threads must be a perfect square." << std::endl;
         return -1;
     }
     else{
         if (L % THREADPERSIDE == 0) {
             int A_loc = L / THREADPERSIDE; // = larghezze di un blocco
-        for(int i=0;i<  NUMTHREAD;i++){
+        for(int i=0;i<  2*NUMTHREAD;i++){
                 (*ThreadStart)[i] = (floor(i/THREADPERSIDE)*A_loc*L + i%THREADPERSIDE*A_loc); //thread at which each block start
             }
             return A_loc;

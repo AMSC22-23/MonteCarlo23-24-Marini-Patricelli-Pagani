@@ -22,6 +22,7 @@ public:
 
 protected:
     void create_rand_vector()  override;
+    void create_rand_vector(std::vector<int>& randVector, std::mt19937& rng_private);
     void flip(std::vector<int>& lattice, std::array<float, 2>& prob, int site, int& M, int& E);
     void simulate_step(std::array<float, 2> prob, std::vector<int>& lattice, int& M, int& E, int offset) override;
     void translate_matrix(std::vector<int>& lattice);

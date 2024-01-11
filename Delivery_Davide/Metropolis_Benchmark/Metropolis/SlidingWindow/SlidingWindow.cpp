@@ -38,7 +38,7 @@ SlidingWindow::SlidingWindow(float interactionStrength, int latticeSize ,int NUM
     omp_set_num_threads(NUMTHREAD);
     // Initialize RandVect with std::make_unique
     RandVect = std::make_unique<std::vector<int> >();
-    RandVect->resize(ceil(IT/(NUMTHREAD*NumSlide)));
+    RandVect->resize(0);
     // Initialize EnergyResults with std::make_unique       
     EnergyResults = std::make_unique<std::vector<float> >();
     // Initialize MagnetizationResults with std::make_unique
@@ -74,7 +74,6 @@ void SlidingWindow::simulate_phase_transition() {
                 deltaE = 0;
                 deltaM = 0;
                 for(int slide = 0; slide < NumSlide; slide++ ){
-                    create_rand_vector();
                     E_loc = 0;
                     M_loc = 0; 
                     for(int taskNum = 0; taskNum < NUMTHREAD; taskNum++ ){
@@ -121,7 +120,18 @@ void SlidingWindow::create_rand_vector() {
             
  }
 }
-
+void SlidingWindow::create_rand_vector(std::vector<int>& randVector, std::mt19937& rng_private) {
+    for (int i = 0; i < ceil(IT/(NUMTHREAD*NumSlide)); i++) {
+        int r = static_cast<int>(dist(rng_private) * A);
+        int c = static_cast<int>(dist(rng_private) * A);
+        if(r%A != 0 && c%A!=0 ){ //not last or first row or column
+            RandVect->emplace_back(r * L + c);
+        }
+        else{
+            RandVect->emplace_back(-1); //will mean do nothing
+        }
+    }
+}
 int SlidingWindow::set_block_size() {
     int THREADPERSIDE = sqrt(NUMTHREAD);
     if(THREADPERSIDE*THREADPERSIDE != NUMTHREAD){
@@ -211,8 +221,12 @@ void SlidingWindow::flip(std::vector<int>& lattice, std::array<float, 2>& prob, 
 
 void SlidingWindow::simulate_step (std::array<float, 2> prob, std::vector<int>& lattice, int& M, int& E, int offset) {
     int n;
+    auto rng_private = std::make_unique<std::mt19937>(std::random_device{}());
+    auto randVector_private = std::make_unique<std::vector<int>>();
+    randVector_private->reserve(ceil(IT/(NUMTHREAD*NumSlide)));
+    create_rand_vector(*randVector_private, *rng_private);
     for (unsigned long int i = 0; i < ceil(IT/(NUMTHREAD*NumSlide));i++) {
-        n = (*RandVect)[i];
+        n = (*randVector_private)[i];
         //if (not boundary) 
         if (n != -1){
             flip(lattice, prob, n + offset, M, E);

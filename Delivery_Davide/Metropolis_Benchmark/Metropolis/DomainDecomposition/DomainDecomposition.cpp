@@ -33,11 +33,9 @@ DomainDecomposition::DomainDecomposition(float interactionStrength, int latticeS
     exit(EXIT_FAILURE);
     }
     omp_set_num_threads(NUMTHREAD);
-    // Initialize RandVect with std::make_unique
+     // Initialize RandVect with std::make_unique
     RandVect = std::make_unique<std::vector<int> >();
-    RandVect->resize(ceil(IT/(NUMTHREAD)));
-    // Initialize rand_vect with create_rand_vect function
-    create_rand_vector();
+    RandVect->reserve(0);
     // Initialize EnergyResults with std::make_unique       
     EnergyResults = std::make_unique<std::vector<float> >();
     // Initialize MagnetizationResults with std::make_unique
@@ -92,10 +90,10 @@ void DomainDecomposition::simulate_phase_transition() {
             m = static_cast<float>(lattice.getMagnetization()) / N;
             
 
-            Temperatures->push_back(T);
+            Temperatures->emplace_back(T);
             T += T_STEP;
-            EnergyResults->push_back(1);
-            MagnetizationResults->push_back(abs(m));
+            EnergyResults->emplace_back(1);
+            MagnetizationResults->emplace_back(abs(m));
             lattice.restore_random_lattice();
              }
         }
@@ -109,8 +107,16 @@ void DomainDecomposition::create_rand_vector() {
     for (int j = 0;j<(ceil(IT/NUMTHREAD));j++) {
         int r = static_cast<int>(dist(rng) * A);
         int c = static_cast<int>(dist(rng) * A);
-        RandVect->push_back ((r * L + c));
+        RandVect->emplace_back ((r * L + c));
         }
+}
+
+void DomainDecomposition::create_rand_vector(std::vector<int>& randVector, std::mt19937& rng_private) {
+    for (int i = 0; i < ceil(IT/NUMTHREAD); i++) {
+        int r = static_cast<int>(dist(rng_private) * A);
+        int c = static_cast<int>(dist(rng_private) * A);
+        randVector.emplace_back((r * L + c));
+    }
 }
 
 int DomainDecomposition::set_block_size() {
@@ -240,8 +246,14 @@ void DomainDecomposition::flip(std::vector<int>& lattice, std::array<float, 2>& 
 
 void DomainDecomposition::simulate_step (std::array<float, 2> prob, std::vector<int>& lattice, int& M, int& E, int offset) {
     int n;
-    for (unsigned long int i = 0; i < (IT/NUMTHREAD);i++) {
-        n = (*RandVect)[i];
+    auto rng_private = std::make_unique<std::mt19937>(std::random_device{}());
+    auto randVector_private = std::make_unique<std::vector<int>>();
+    randVector_private->reserve(ceil(IT/NUMTHREAD));
+
+    create_rand_vector(*randVector_private, *rng_private);
+
+    for (unsigned long int i = 0; i < ceil((IT/NUMTHREAD));i++) {
+        n = (*randVector_private)[i];
         //if (boundary[i]) {
         if (n%A==0 || (n+1)%A==0 || n < A || n >A*(A-1)) {
             atomic_flip(lattice, prob, n + offset, M, E);

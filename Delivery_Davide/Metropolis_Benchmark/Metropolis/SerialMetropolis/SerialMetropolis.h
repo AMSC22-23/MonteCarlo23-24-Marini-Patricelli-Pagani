@@ -1,4 +1,4 @@
-// DomainDecomposition.h
+// SerialMetropolis.h
 
 #ifndef MY_PROJECT_MONTE_CARLO_SIMULATION_H
 #define MY_PROJECT_MONTE_CARLO_SIMULATION_H
@@ -6,28 +6,23 @@
 #include <array>
 #include <vector>
 #include <memory>
-#include <random>
 #include "../AbstractMonteCarloSimulation.h"
 #include "../../Lattice/SquareLattice.h"
 
 
 
-
-class DomainDecomposition : public AbstractMonteCarloSimulation {
+class SerialMetropolis : public AbstractMonteCarloSimulation {
 public:
 
-    DomainDecomposition(float interactionStrength, int latticeSize, int NUMTHREAD , float T_MIN, float T_MAX, float T_STEP , long int IT) ;
+    SerialMetropolis(float interactionStrength, int latticeSize , float T_MIN, float T_MAX, float T_STEP , long int IT) ;
 
     void simulate_phase_transition() override;
     void store_results_to_file() const override ;
 
 protected:
     void create_rand_vector()  override;
-    void create_rand_vector(std::vector<int>& randVector, std::mt19937& rng_private);
     void flip(std::vector<int>& lattice, std::array<float, 2>& prob, int site, int& M, int& E);
-    void atomic_flip(std::vector<int>& lattice, std::array<float, 2>& prob, int site, int& M, int& E);
-    void simulate_step(std::array<float, 2> prob, std::vector<int>& lattice, int& M, int& E, int offset) override;
-    int set_block_size();
+    void simulate_step(std::array<float, 2> prob, std::vector<int>& lattice, int& M, int& E, int offset = 0) override;
 
 private:
     SquareLattice lattice;  // Use SquareLattice as a private member
@@ -42,10 +37,6 @@ private:
     const int L;
     const int N ;
     const long int IT;
-    const int NUMTHREAD;
-    int A;
-    std::mt19937 rng;  // Mersenne Twister 19937 generator
-    std::uniform_real_distribution<double> dist;  // Uniform distribution in [0, 1)
 };
 
 

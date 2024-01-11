@@ -34,7 +34,7 @@ public:
 
 private:
     const int L;
-    const int J;
+    const float J;
     int N; 
     int M;
     float E;
